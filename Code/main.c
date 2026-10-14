@@ -15,10 +15,11 @@ int	main()
 		else if (read == "PIPED")
 		{
 			fork();
-		}
-		else if (read == "CONCURRENT"(
-		{
 			waitpid();
+		}
+		else if (read == "CONCURRENT")
+		{
+			
 		}
 		else if (read == "EXIT
 	}
