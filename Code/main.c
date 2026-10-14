@@ -21,6 +21,6 @@ int	main()
 		{
 			
 		}
-		else if (read == "EXIT
+		else if (read == "EXIT")
 	}
 }
