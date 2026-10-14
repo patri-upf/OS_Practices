@@ -2,20 +2,23 @@
 #include "circularBuffer.h"
 #include <unistd.h>
 
+#define MAX_SIZE 1024
+
 int	main()
 {
 	buffer_init();
-	fork();
 
-	while (read(0, *buf, size_t nbytes))
+	while (true) 
 	{
+		read(0, *buf, size_t nbytes))
+		fork();
 		if (read == "SINGLE") // strcmp
 		{
 		}
 		else if (read == "PIPED")
 		{
 			fork();
-			waitpid();
+			
 		}
 		else if (read == "CONCURRENT")
 		{
