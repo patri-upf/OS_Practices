@@ -5,16 +5,16 @@
 int	main()
 {
 	buffer_init();
-	fork();
 
 	while (read(0, *buf, size_t nbytes))
 	{
+		fork();
 		if (read == "SINGLE") // strcmp
 		{
 		}
 		else if (read == "PIPED")
 		{
-			fork();
+			
 		}
 		else if (read == "CONCURRENT"(
 		{
