@@ -1,5 +1,4 @@
-#include "splitCommand.h"
-
+#include "circularBuffer.h"
 
 /*
  * Splits a command line into an argv-style array suitable for execvp().
@@ -8,7 +7,6 @@
  */
 char **split_command(char *line)
 {
-    
     size_t count = 0;
     char *tmp = line;
     char **argv;
