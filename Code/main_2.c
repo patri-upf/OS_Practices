@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/wait.h>
+#include <sys/wait.h>           //Windows does not support this library
 
 #include "circularBuffer.h"
 #include "splitCommand.h"
@@ -151,7 +151,7 @@ int main( void )
                         close(fd[1]);
                         if (execvp(args_2[0], args_2) < 0) {
                             perror("Error in execvp PIPED");
-                            _exit(EXIT_FAILURE);
+                            exit(EXIT_FAILURE);
                         }
                     }
                 }
