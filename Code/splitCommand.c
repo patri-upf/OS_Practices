@@ -1,4 +1,5 @@
 #include "circularBuffer.h"
+#include <string.h>
 
 /*
  * Splits a command line into an argv-style array suitable for execvp().

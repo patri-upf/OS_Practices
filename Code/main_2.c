@@ -2,8 +2,11 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "circularBuffer.h"
+#include "splitCommand.h"
 
 #define MAX_COMMAND 60
 #define MAX_ARGS    512
@@ -62,11 +65,13 @@ int main( void )
 {
     CircularBuffer circular_buff;
     char    *line;
-    char    command_1[MAX_COMMAND];
-    char    command_2[MAX_COMMAND];
-    char    *args_1[MAX_ARGS];
-    char    *args_2[MAX_ARGS];
+    char    *command_1;
+    char    *command_2;
+    char    **args_1;
+    char    **args_2;
     int     reachedEOF = 0;
+    pid_t   pid_1, pid_2;
+    int     fd[2];
     
 
     if (buffer_init(&circular_buff, MAX_SIZE))
@@ -74,25 +79,36 @@ int main( void )
 
     while ((line = read_line(&circular_buff, &reachedEOF)) != NULL)
     {
-
-        if (bytes_read <= 0)
-            reachedEOF = 1;
-
-        // now we save in our principal circular buffer from secondary linear
-        for (int i=0; i<bytes_read; i++)
-            buffer_push(&circular_buff, lineal_buff[i]);
-
-        int size_element = buffer_size_next_element(&circular_buff, '\n', reachedEOF);
-
-        // read from circular buffer 
-        for (int i=0; i<size_element - 1; i++)
-            line[i] = buffer_pop(&circular_buff);
-        */
         if (strcmp(line, "SINGLE") == 0)
         {
-            //args1 = split_command();
+            // lee la linea que tiene el comando
+            command_1 = read_line(&circular_buff, &reachedEOF);
+            
+            if (command_1!= NULL)
+            {
+                args_1 = split_command(command_1);
 
-            // execute_single();
+                if (args_1 != NULL)
+                {
+                    pid_1 = fork();
+                    if (pid_1 == 0)
+                    {
+                    // el proceso hijo ejecuta el comando
+                        if (execvp(args_1[0], args_1) < 0)
+                        {
+                            perror("Error en execvp SINGLE");
+                            free(command_1);
+                            free(line);
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                    else if (pid_1 > 0)
+                        // mientras el padre espera al hijo
+                        waitpid(pid_1, NULL, 0);
+
+                    free(command_1);
+                }
+            }
         }
         else if (strcmp(line, "PIPED") == 0)
         {
@@ -100,11 +116,37 @@ int main( void )
         }
         else if(strcmp(line, "CONCURRENT") == 0)
         {
-            // execute_single();
+            // el padre continua y el hijo espera
+            // execute_concurrent();
+            command_1 = read_line(&circular_buff, &reachedEOF);
+            
+            if (command_1 != NULL)
+            {
+                args_1 = split_command(command_1);
+
+                if (args_1 != NULL)
+                {
+                    pid_1 = fork();
+                    if (pid_1 == 0)
+                    {
+                        if (execvp(args_1[0], args_1) < 0)
+                        {
+                            perror("Error en execvp CONCURRENT");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+
+                    // no espera al padre (proceso zombie...)
+                    free(args_1);
+                }
+
+                free(command_1);
+            }
         }
         else if(strcmp(line, "EXIT") == 0)
         {
             printf("BYE :)\n\tSee you soon...\n");
+            free(line);
             break ;
         }
         else
