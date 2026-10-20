@@ -12,7 +12,7 @@
 #define MAX_ARGS    512
 #define MAX_SIZE    2052
 
-char    *read_line(CircularBuffer *circular_buff, int *reachedEOF)
+char *read_line(CircularBuffer *circular_buff, int *reachedEOF)
 {
     unsigned char    lineal_buff[MAX_SIZE];
     char    *line;
@@ -110,9 +110,59 @@ int main( void )
                 }
             }
         }
-        else if (strcmp(line, "PIPED") == 0)
-        {
-            // execute_single();
+        else if (strcmp(line, "PIPED") == 0) {
+            command_1 = read_line(&circular_buff, &reachedEOF);
+            if (command_1 != NULL) {
+                args_1 = split_command(command_1);
+                if (args_1 != NULL) {
+                    if (pipe(fd) < 0) {
+                        perror("ERORR");
+                    }
+
+                    pid_1 = fork();
+                    if (pid_1 < 0) {
+                        perror("fork");
+                    }
+                    if (pid_1 == 0) {           //Is the child
+                        dup2(fd[1], STDOUT_FILENO);
+                        close(fd[1]);
+                        close(fd[0]);
+                        if (execvp(args_1[0], args_1) < 0) {
+                            perror("Error in execvp PIPED");
+                            exit(EXIT_FAILURE);
+                        }
+
+                    }
+                }
+                free(command_1);
+                free(args_1);
+            }
+            command_2 = read_line(&circular_buff, &reachedEOF);
+            if (command_2 != NULL) {
+                args_2 = split_command(command_2);
+                if (args_2 != NULL) {
+                    pid_2 = fork();
+                    if (pid_2 < 0) {
+                        perror("fork");
+                    }
+                    if (pid_2 == 0) {
+                        dup2(fd[0], STDIN_FILENO);
+                        close(fd[0]);
+                        close(fd[1]);
+                        if (execvp(args_2[0], args_2) < 0) {
+                            perror("Error in execvp PIPED");
+                            _exit(EXIT_FAILURE);
+                        }
+                    }
+                }
+                close(fd[1]);
+                close(fd[0]);
+                waitpid(pid_1, NULL, 0);
+                waitpid(pid_2, NULL, 0);
+                free(command_2);
+                free(args_2); 
+            }
+            free(line);
         }
         else if(strcmp(line, "CONCURRENT") == 0)
         {
