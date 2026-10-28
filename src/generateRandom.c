@@ -12,15 +12,18 @@
 
 int main(int argc, char* argv[]) {
     char s[120];
-    if (argc != 3){
+    if (argc != 3)
+    {
         sprintf(s, "Usage generateRandom nSamples nMax\n");
         write(1, s, strlen(s));
         _exit(1);
     }
+
     int nSamples, nMax;
     sscanf(argv[1], "%d", &nSamples);
     sscanf(argv[2], "%d", &nMax);
-    for (int i =0; i <nSamples; i ++) {
+    for (int i =0; i <nSamples; i ++)
+    {
         int r = random()%nMax;
         sprintf(s, "%d\n", r);
         write(1, s, strlen(s));

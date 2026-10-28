@@ -8,4 +8,4 @@
 
 char	*read_line(CircularBuffer *circular_buff, int *reachedEOF);
 void	usage_msg( void );
-
+void    free_args(char **args);

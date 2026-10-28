@@ -1,6 +1,15 @@
 #include "utils.h"
 #include "circularBuffer.h"
 
+void    free_args(char **args)
+{
+    if (!args)
+		return;
+	for (int i = 0; args[i] != NULL; i++)
+		free(args[i]);
+	free(args);
+}
+
 char *read_line(CircularBuffer *circular_buff, int *reachedEOF)
 {
     unsigned char    lineal_buff[MAX_SIZE];

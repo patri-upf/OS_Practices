@@ -1,3 +1,3 @@
-gcc -Wall -Wextra src/main.c src/utils.c src/circularBuffer.c src/splitCommand.c -o shell
-gcc  -o fibonacci src/fibonacci.c
-gcc  -o generateRandom src/generateRandom.c
+gcc -Wall -Wextra src/main.c src/circularBuffer.c src/splitCommand.c src/utils.c -o shell
+gcc src/fibonacci.c -o fibonacci
+gcc src/generateRandom.c -o generateRandom

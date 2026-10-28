@@ -10,7 +10,25 @@
 #include "splitCommand.h"
 #include "utils.h"
 
-int	end = 0;
+int executor(char **args)
+{
+    if (!args || !args[0])
+        return -1;
+
+    char path[256];
+    char *exec_cmd = args[0];
+
+    if (strcmp(args[0], "fibonacci") == 0 || strcmp(args[0], "generateRandom") == 0)
+    {
+        snprintf(path, sizeof(path), "./%s", args[0]);
+        exec_cmd = path;
+    }
+
+    if (execvp(exec_cmd, args) < 0)
+        return -1;
+
+    return 0;
+}
 
 int	execute_single(CircularBuffer *circular_buff, int *reachedEOF)
 {
@@ -28,7 +46,7 @@ int	execute_single(CircularBuffer *circular_buff, int *reachedEOF)
 	    	pid_1 = fork();
 	    	if (pid_1 == 0)
 	    	{
-				if (execvp(args[0], args) < 0)
+				if (executor(args) < 0)	
 				{
 		    		perror("Error in execvp SINGLE\n");
 		    		free(command);
@@ -38,7 +56,8 @@ int	execute_single(CircularBuffer *circular_buff, int *reachedEOF)
 	    	else if (pid_1 > 0)
 				waitpid(pid_1, NULL, 0);
 
-	    		free(command);
+	    	free(command);
+			free(args);
 		}
     }
     
@@ -77,7 +96,7 @@ int	execute_piped(CircularBuffer *circular_buff, int *reachedEOF)
 				close(fd[1]);
 				close(fd[0]);
 
-			if (execvp(args_1[0], args_1) < 0)
+			if (executor(args_1) < 0)
 			{
 			perror("Error in execvp PIPED\n");
 			return EXIT_FAILURE;
@@ -92,32 +111,32 @@ int	execute_piped(CircularBuffer *circular_buff, int *reachedEOF)
 
     if (command_2 != NULL)
     {
-	args_2 = split_command(command_2);
-	if (args_2 != NULL)
-	{
-	    pid_2 = fork();
-	    if (pid_2 < 0)
-		perror("fork");
+		args_2 = split_command(command_2);
+		if (args_2 != NULL)
+		{
+		    pid_2 = fork();
+		    if (pid_2 < 0)
+			perror("fork");
 
-	    if (pid_2 == 0)
-	    {
-			dup2(fd[0], STDIN_FILENO);
-			close(fd[0]);
-			close(fd[1]);
-			if (execvp(args_2[0], args_2) < 0)
-			{
-				perror("Error in execvp PIPED\n");
-				return EXIT_FAILURE;
-			}
-	    }
-	}
+		    if (pid_2 == 0)
+		    {
+				dup2(fd[0], STDIN_FILENO);
+				close(fd[0]);
+				close(fd[1]);
+				if (executor(args_2) < 0)
+				{
+					perror("Error in execvp PIPED\n");
+					return EXIT_FAILURE;
+				}
+		    }
+		}
 
-	close(fd[1]);
-	close(fd[0]);
-	waitpid(pid_1, NULL, 0);
-	waitpid(pid_2, NULL, 0);
-	free(command_2);
-	free(args_2);
+		close(fd[1]);
+		close(fd[0]);
+		waitpid(pid_1, NULL, 0);
+		waitpid(pid_2, NULL, 0);
+		free(command_2);
+		free(args_2);
     }
 
     return EXIT_SUCCESS;
@@ -133,25 +152,25 @@ int	execute_concurrent(CircularBuffer *circular_buff, int *reachedEOF)
 
     if (command != NULL)
     {
-	args = split_command(command);
+		args = split_command(command);
 
-	if (args != NULL)
-	{
-	    pid = fork();
-
-	    if (pid == 0)
-	    {
-		if (execvp(args[0], args) < 0)
+		if (args != NULL)
 		{
-		    perror("Error en execvp CONCURRENT\n");
-		    return EXIT_FAILURE;
+	    	pid = fork();
+
+	    	if (pid == 0)
+	    	{
+				if (executor(args) < 0)
+				{
+		    		perror("Error en execvp CONCURRENT\n");
+		    		return EXIT_FAILURE;
+				}
+	    	}
+
+	    	free(args);
 		}
-	    }
 
-	    free(args);
-	}
-
-	free(command);
+		free(command);
     }
 
     return EXIT_SUCCESS;
@@ -167,16 +186,16 @@ int execute_timeout(CircularBuffer *circular_buff, int *reachedEOF)
 		int		seconds = atoi(str_time);
 		char	**args = split_command(command);
 
-		pid_t executor = fork();
-		if (executor == 0)
+		pid_t executor_pid = fork();
+		if (executor_pid == 0)
 		{
-			execvp(args[0], args);
+			executor(args);
 			perror("execvp TIMEOUT");
 			exit(EXIT_FAILURE);
 		}
 
-		pid_t watcher = fork();
-		if (watcher == 0)
+		pid_t watcher_pid = fork();
+		if (watcher_pid == 0)
 		{
 			sleep(seconds);
 			printf("\tERROR: timeout\n");
@@ -184,16 +203,17 @@ int execute_timeout(CircularBuffer *circular_buff, int *reachedEOF)
 		}
 
 		pid_t end_child = wait(NULL);          
-		if (end_child == executor)
-			kill(watcher, SIGKILL);        
+		if (end_child == executor_pid)
+			kill(watcher_pid, SIGKILL);        
 		else
-			kill(executor, SIGKILL);       
+			kill(executor_pid, SIGKILL);       
 
-		waitpid(executor, NULL, 0);
-		waitpid(watcher, NULL, 0);
+		waitpid(executor_pid, NULL, 0);
+		waitpid(watcher_pid, NULL, 0);
 
 		free(args);
 	}
+
 	free(str_time);
 	free(command);
 
@@ -210,7 +230,7 @@ int main( void )
     if (buffer_init(&circular_buff, MAX_SIZE))
         return EXIT_FAILURE;
 
-    while (((line = read_line(&circular_buff, &reachedEOF)) != NULL) && !end)
+    while ((line = read_line(&circular_buff, &reachedEOF)) != NULL)
     {
 		if (strcmp(line, "TIMEOUT") == 0)
 		{
@@ -231,13 +251,19 @@ int main( void )
         else if (strcmp(line, "PIPED") == 0)
 		{
 	    	if (execute_piped(&circular_buff, &reachedEOF))
+			{
+				free(line);
 				exit(EXIT_FAILURE);
+			}
 		}
 		else if(strcmp(line, "CONCURRENT") == 0)
 		{
 			if (execute_concurrent(&circular_buff, &reachedEOF))
+			{
+            	free(line);
 				exit(EXIT_FAILURE);
-        }
+        	}
+		}
         else if(strcmp(line, "EXIT") == 0)
         {
             printf("BYE :)\n\tSee you soon...\n");
