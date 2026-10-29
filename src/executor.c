@@ -1,4 +1,7 @@
 #include "executor.h"
+#include <signal.h>
+
+extern volatile sig_atomic_t last_concurrent_pid;
 
 int	executor(char **args)
 {
@@ -142,25 +145,28 @@ int	execute_concurrent(CircularBuffer *circular_buff, int *reachedEOF)
 
     if (command != NULL)
     {
-		args = split_command(command);
+	args = split_command(command);
 
-		if (args != NULL)
+	if (args != NULL)
+	{
+	    pid = fork();
+
+	    if (pid == 0)
+	    {
+		signal(SIGINT, SIG_DFL);
+		if (executor(args) < 0)
 		{
-	    	pid = fork();
-
-	    	if (pid == 0)
-	    	{
-				if (executor(args) < 0)
-				{
-		    		perror("Error en execvp CONCURRENT\n");
-		    		return EXIT_FAILURE;
-				}
-	    	}
-
-	    	free(args);
+		    perror("Error en execvp CONCURRENT\n");
+		    return EXIT_FAILURE;
 		}
+	    }
+	    else if (pid > 0)
+		last_concurrent_pid = pid;
 
-		free(command);
+	    free(args);
+	}
+
+	free(command);
     }
 
     return EXIT_SUCCESS;
