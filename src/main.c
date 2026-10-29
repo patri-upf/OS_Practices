@@ -11,6 +11,7 @@
 #include "utils.h"
 
 volatile sig_atomic_t last_concurrent_pid = -1;
+volatile sig_atomic_t timeout_time = -1;
 
 void	handle_sigint(int sig)
 {
@@ -31,47 +32,46 @@ int main( void )
 
     while ((line = read_line(&circular_buff, &reachedEOF)) != NULL)
     {
-	if (strcmp(line, "TIMEOUT") == 0)
-	{
-		if(execute_timeout(&circular_buff, &reachedEOF)) 
+		if (strcmp(line, "TIMEOUT") == 0)
 		{
-			free(line);
-			exit(EXIT_FAILURE);
+			if(execute_timeout(&circular_buff, &reachedEOF)) 
+			{
+				free(line);
+				exit(EXIT_FAILURE);
+			}
 		}
-	}
         else if (strcmp(line, "SINGLE") == 0)
         {
-		if (execute_single(&circular_buff, &reachedEOF))
-		{
-			free(line);
-			exit(EXIT_FAILURE);
-		}
+			if (execute_single(&circular_buff, &reachedEOF))
+			{
+				free(line);
+				exit(EXIT_FAILURE);
+			}
         }
         else if (strcmp(line, "PIPED") == 0)
-	{
-		if (execute_piped(&circular_buff, &reachedEOF))
 		{
-			free(line);
-			exit(EXIT_FAILURE);
+			if (execute_piped(&circular_buff, &reachedEOF))
+			{
+				free(line);
+				exit(EXIT_FAILURE);
+			}
 		}
-	}
-	else if(strcmp(line, "CONCURRENT") == 0)
-	{
-		if (execute_concurrent(&circular_buff, &reachedEOF))
+		else if(strcmp(line, "CONCURRENT") == 0)
 		{
-			free(line);
-			exit(EXIT_FAILURE);
+			if (execute_concurrent(&circular_buff, &reachedEOF))
+			{
+				free(line);
+				exit(EXIT_FAILURE);
         	}
-	}
-        else if(strcmp(line, "EXIT") == 0)
+		}
+		else if(strcmp(line, "EXIT") == 0)
         {
-            printf("BYE :)\n\tSee you soon...\n");
-            free(line);
-            break ;
+			printf("BYE :)\n\tSee you soon...\n");
+			break ;
         }
-        else
-	    	usage_msg();
+        else {
+	    	usage_msg(); }
 
-	free(line);
+		free(line);
     }
 }

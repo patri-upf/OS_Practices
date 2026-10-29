@@ -6,6 +6,7 @@
 #include "circularBuffer.h"
 #include "splitCommand.h"
 #include "utils.h"
+#include "timeOut.h"
 
 int	executor(char **args);
 int	execute_single(CircularBuffer *circular_buff, int *reachedEOF);

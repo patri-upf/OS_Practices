@@ -2,3 +2,5 @@ We have used Claude_AI
 
 We used it in order to understand the project and also help us organize the ideas of the structure.
 Also, understanding some specifics things as STDIN_FILENO, SSIZE_T, how to use fork() and pipe().
+
+We used it also to help us realize the error in our code with the global variable for the timeout.
